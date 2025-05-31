@@ -37,10 +37,6 @@ async function setStatus(body: any, kv: Deno.Kv, token?: string) {
 async function main() {
   const kv = await Deno.openKv();
   const key = Deno.env.get("SECRET_KEY");
-  if (!key) {
-    console.error("SECRET_KEY is not set");
-    Deno.exit(1);
-  }
   await kv.set(["settings", "key"], Deno.env.get("SECRET_KEY"));
   await kv.set(["status"], {
     status: "online",
