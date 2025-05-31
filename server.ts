@@ -34,15 +34,8 @@ async function setStatus(body: any, kv: Deno.Kv, token?: string) {
   return new Response("OK", { status: 200 });
 }
 
-async function main() {
+if (import.meta.main) {
   const kv = await Deno.openKv();
-  const key = Deno.env.get("SECRET_KEY");
-  await kv.set(["settings", "key"], Deno.env.get("SECRET_KEY"));
-  await kv.set(["status"], {
-    status: "online",
-    timestamp: Date.now(),
-  });
-
   Deno.serve(async (req) => {
     const url = new URL(req.url);
     const path = url.pathname;
@@ -52,6 +45,9 @@ async function main() {
     if (req.method === "GET") {
       try {
         const rawStatus = await kv.get(["status"]);
+        if (!rawStatus.value) {
+          return new Response("No Ark", { status: 502 });
+        }
         const lastStatus = statusSchema.parse(rawStatus.value);
         const status = Date.now() - lastStatus.timestamp > tenMinites
           ? "offline"
@@ -76,8 +72,4 @@ async function main() {
     }
     return new Response("Not Found", { status: 404 });
   });
-}
-
-if (import.meta.main) {
-  main();
 }
