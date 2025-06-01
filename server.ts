@@ -18,7 +18,12 @@ const tenMinites = 1000 * 60 * 10;
 async function setStatus(body: any, kv: Deno.Kv, token?: string) {
   const key = await kv.get(["settings", "key"]);
   if (!key.value || !token || token !== key.value) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", {
+      status: 401,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
   }
   try {
     const ot = postSchema.parse(body);
@@ -28,10 +33,20 @@ async function setStatus(body: any, kv: Deno.Kv, token?: string) {
     });
   } catch (e) {
     if (e instanceof z.ZodError) {
-      return new Response(JSON.stringify(e.errors), { status: 400 });
+      return new Response(JSON.stringify(e.errors), {
+        status: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
     }
   }
-  return new Response("OK", { status: 200 });
+  return new Response("OK", {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+    },
+  });
 }
 
 if (import.meta.main) {
@@ -40,13 +55,23 @@ if (import.meta.main) {
     const url = new URL(req.url);
     const path = url.pathname;
     if (path !== "/") {
-      return new Response("Not Found", { status: 404 });
+      return new Response("Not Found", {
+        status: 404,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
     }
     if (req.method === "GET") {
       try {
         const rawStatus = await kv.get(["status"]);
         if (!rawStatus.value) {
-          return new Response("No Ark", { status: 502 });
+          return new Response("No Ark", {
+            status: 502,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+            },
+          });
         }
         const lastStatus = statusSchema.parse(rawStatus.value);
         const status = Date.now() - lastStatus.timestamp > tenMinites
@@ -57,19 +82,34 @@ if (import.meta.main) {
             ...lastStatus,
             status,
           }),
-          { status: 200 },
+          {
+            status: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+            },
+          },
         );
       } catch (e) {
         if (e instanceof z.ZodError) {
           console.error(e.errors);
         }
-        return new Response("Server Error", { status: 500 });
+        return new Response("Server Error", {
+          status: 500,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
       }
     }
     if (req.method === "POST") {
       const token = req.headers.get("Authorization")?.split(" ")[1];
       return setStatus(await req.json(), kv, token);
     }
-    return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", {
+      status: 404,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
   });
 }
